@@ -35,7 +35,8 @@ int main(int argc, char *argv[])
     // ----------------------
     // Create TCP socket
     // ----------------------
-    client_fd = socket(AF_INET, SOCK_STREAM, 0); // AF_INET = IPv4, SOCK_STREAM = TCP
+    client_fd = socket(AF_INET,     if(write(client_fd, message, strlen(message)) < 0) {
+SOCK_STREAM, 0); // AF_INET = IPv4, SOCK_STREAM = TCP
     if (client_fd < 0) {
         perror("socket failed");
         exit(EXIT_FAILURE);
@@ -70,8 +71,7 @@ int main(int argc, char *argv[])
     // ----------------------
     // Send message to the server
     // ----------------------
-    const char *message = "Hello from client!";
-    if(write(client_fd, message, strlen(message)) < 0) {
+    if(write(client_fd, buffer, strlen(buffer)) < 0) {
         perror("write failed");
     }
 
